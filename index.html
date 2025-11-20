@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOA Fighter - AI Appeal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@google/genai@0.1.0/dist/client.js"></script>
+    <style>
+        /* Concept 3: Bold & Dynamic Styling */
+        body { background-color: #f0f4f8; } /* Light blue-grey background */
+        .container-box { 
+            background-color: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(40, 40, 70, 0.1); /* Deep shadow */
+        }
+        .header-title { color: #1a237e; } /* Deep Indigo */
+        .btn-primary { 
+            background-color: #3f51b5; /* Indigo */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover { background-color: #303f9f; }
+        .status-success { background-color: #c8e6c9; color: #388e3c; }
+        .status-error { background-color: #ffcdd2; color: #c62828; }
+        .output-box { border-left: 5px solid #3f51b5; } /* Blue highlight */
+        /* Tone Select Styling for better visibility */
+        #toneSelect {
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+
+    <div id="app" class="flex flex-col items-center">
+        <header class="py-6 text-center">
+            <h1 class="text-4xl font-extrabold header-title">HOA Fine Fighter 🤖</h1>
+            <p class="mt-2 text-xl text-gray-600">Fight Unfair Fines with AI-Powered Appeal Letters</p>
+        </header>
+
+        <main class="w-full max-w-4xl container-box p-6 sm:p-10">
+            <div id="trialMessage" class="bg-indigo-100 border border-indigo-400 text-indigo-700 p-4 rounded-lg mb-6">
+                ✨ **Free Trial:** Get your first appeal generated for free!
+            </div>
+
+            <section class="mb-6">
+                <label for="fineInput" class="block text-lg font-medium text-gray-700 mb-2">
+                    1. Paste Your HOA Violation Notice Text Here:
+                </label>
+                <textarea
+                    id="fineInput"
+                    rows="8"
+                    class="w-full p-4 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Example: 'You are fined $100 for non-compliance...'"
+                ></textarea>
+            </section>
+            
+            <section id="toneSection" class="flex justify-between items-center mb-6 p-3 border rounded-lg bg-gray-50">
+                <label for="toneSelect" class="font-medium text-gray-700">2. Select Appeal Tone (PRO Feature):</label>
+                <select id="toneSelect" disabled class="cursor-not-allowed bg-white">
+                    <option value="formal">Formal & Polite (Default)</option>
+                    <option value="firm">Firm but Professional</option>
+                    <option value="aggressive" disabled>Aggressive/Legalistic (PRO)</option>
+                </select>
+            </section>
+
+
+            <div class="flex justify-center mb-8">
+                <button
+                    id="generateButton"
+                    class="px-8 py-3 text-white font-semibold rounded-lg shadow-md btn-primary"
+                >
+                    Generate Appeal Letter
+                </button>
+            </div>
+
+            <div id="statusMessage" class="hidden px-4 py-3 rounded relative mb-6"></div>
+
+            <section id="outputSection" class="mt-8 hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                    ✅ Your AI-Generated Appeal Letter:
+                </h2>
+                <div class="bg-gray-100 p-6 rounded-lg border border-indigo-300 relative output-box">
+                    <p class="font-bold text-lg mb-2">Subject: <span id="outputSubject" class="font-normal text-base"></span></p>
+                    <pre id="appealOutput" class="whitespace-pre-wrap font-sans text-gray-800 text-base leading-relaxed"></pre>
+                    
+                    <div class="mt-4 flex justify-end space-x-2">
+                        <button id="copyFullButton" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
+                            Copy Full Email
+                        </button>
+                        <button id="copyTextButton" class="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition">
+                            Copy Letter Body Only
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="paymentGate" class="hidden mt-8 p-6 border-t-2 border-dashed border-red-300 text-center">
+                <h3 class="text-2xl font-bold text-red-600 mb-4">Your Free Trial Has Ended!</h3>
+                <p class="text-lg text-gray-700 mb-6">Unlock powerful PRO features including Tone Customization and Unlimited Appeals.</p>
+
+                <div class="flex justify-center space-x-4">
+                    <a id="linkSingle" href="YOUR_SINGLE_PAYMENT_LINK" target="_blank"
+                       class="flex-1 block p-4 border-2 border-yellow-500 rounded-lg shadow-lg bg-yellow-100 hover:bg-yellow-200 transition">
+                        <p class="font-bold text-xl text-yellow-800">One-Time Appeal</p>
+                        <p class="text-2xl font-extrabold text-yellow-900">₹50</p>
+                        <p class="text-sm text-gray-600 mt-2">Pay per use</p>
+                    </a>
+                    
+                    <a id="linkMonthly" href="YOUR_MONTHLY_PAYMENT_LINK" target="_blank"
+                       class="flex-1 block p-4 border-2 border-green-600 rounded-lg shadow-lg bg-green-100 hover:bg-green-200 transition">
+                        <p class="font-bold text-xl text-green-800">Unlimited Monthly</p>
+                        <p class="text-2xl font-extrabold text-green-900">₹299/Month</p>
+                        <p class="text-sm text-gray-600 mt-2">Unlock all PRO features</p>
+                    </a>
+                </div>
+            </section>
+            </main>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION (Change ONLY the Key and Links!) ---
+        const API_KEY = AIzaSyCvCAxVIA8YS34OyguZF5pZCIhACzfYq8U ; 
+        // NOTE: These links must be created in PayPal/Stripe/Razorpay first.
+        const SINGLE_PAYMENT_LINK = 'YOUR_SINGLE_PAYMENT_LINK'; 
+        const MONTHLY_PAYMENT_LINK = 'YOUR_MONTHLY_PAYMENT_LINK';
+
+        // --- 2. CORE LOGIC (No need to change) ---
+        const ai = new GoogleGenerativeAI(API_KEY);
+        const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" }); 
+        
+        // DOM Elements
+        const fineInput = document.getElementById('fineInput');
+        const generateButton = document.getElementById('generateButton');
+        const appealOutput = document.getElementById('appealOutput');
+        const outputSection = document.getElementById('outputSection');
+        const statusMessage = document.getElementById('statusMessage');
+        const outputSubject = document.getElementById('outputSubject');
+        const toneSelect = document.getElementById('toneSelect');
+        const paymentGate = document.getElementById('paymentGate');
+        const trialMessage = document.getElementById('trialMessage');
+        const linkSingle = document.getElementById('linkSingle');
+        const linkMonthly = document.getElementById('linkMonthly');
+        
+        // Trial Counter (Uses browser's local storage)
+        let appealCount = parseInt(localStorage.getItem('hoaFighterAppeals')) || 0;
+        const MAX_FREE_APPEALS = 1;
+
+        // Update Links
+        linkSingle.href = SINGLE_PAYMENT_LINK;
+        linkMonthly.href = MONTHLY_PAYMENT_LINK;
+        if (appealCount >= MAX_FREE_APPEALS) { trialMessage.classList.add('hidden'); }
+        else { trialMessage.textContent = `✨ Free Trial: ${MAX_FREE_APPEALS - appealCount} appeals remaining for free!`; }
+
+        const showStatus = (message, type) => {
+            statusMessage.textContent = message;
+            statusMessage.className = `px-4 py-3 rounded relative mb-6 status-${type}`;
+            statusMessage.classList.remove('hidden');
+            setTimeout(() => { statusMessage.classList.add('hidden'); }, 5000);
+        };
+
+        // --- Main Generation Function ---
+        generateButton.addEventListener('click', async () => {
+            const fineText = fineInput.value.trim();
+            const selectedTone = toneSelect.value;
+            
+            if (appealCount >= MAX_FREE_APPEALS) {
+                paymentGate.classList.remove('hidden');
+                showStatus("Please subscribe to continue generating appeal letters.", 'error');
+                return;
+            }
+            if (!fineText) { showStatus("Please paste your HOA fine text first.", 'error'); return; }
+
+            // Loading State
+            generateButton.disabled = true;
+            generateButton.textContent = 'Generating... Please Wait';
+            showStatus("AI is writing your appeal...", 'warning');
+            outputSection.classList.add('hidden');
+            paymentGate.classList.add('hidden');
+            
+            const tonePrompt = selectedTone === 'firm' ? 
+                               "Ensure the letter is firm and legally precise, but maintains a respectful tone." : 
+                               selectedTone === 'aggressive' ?
+                               "Write the letter using highly aggressive and legalistic language, citing procedural errors clearly." :
+                               "Maintain a strictly formal and polite tone.";
+
+            const prompt = `You are a professional paralegal specializing in homeowner association (HOA) disputes. Your task is to write a compelling appeal letter to the HOA Board requesting the fine to be dropped or waived.
+            HOA Violation Details: ${fineText}
+            ---
+            INSTRUCTIONS FOR THE LETTER:
+            1. Generate a formal subject line (e.g., FORMAL APPEAL OF VIOLATION NOTICE...).
+            2. Start the body with 'Dear HOA Board of Directors,'.
+            3. Write a compelling, structured argument.
+            4. Conclude by requesting a formal review and written notification.
+            5. ${tonePrompt}
+            Format the output ONLY as follows, separating the Subject and Body for easy parsing:
+            [SUBJECT]: [Generated Subject Line]
+            [BODY]: [Generated Body of the Appeal Letter]
+            `;
+
+            try {
+                const result = await model.generateContent(prompt);
+                const fullText = result.text;
+
+                // Simple parsing for Subject and Body
+                const subjectMatch = fullText.match(/\[SUBJECT\]:\s*(.*)/i);
+                const bodyMatch = fullText.match(/\[BODY\]:\s*([\s\S]*)/i);
+                
+                let subject = subjectMatch ? subjectMatch[1].trim() : "FORMAL APPEAL OF VIOLATION NOTICE";
+                let body = bodyMatch ? bodyMatch[1].trim() : fullText;
+
+                outputSubject.textContent = subject;
+                appealOutput.textContent = body;
+                
+                outputSection.classList.remove('hidden');
+                showStatus("Appeal letter successfully generated!", 'success');
+                
+                // Update trial count only on successful generation
+                appealCount++;
+                localStorage.setItem('hoaFighterAppeals', appealCount);
+                trialMessage.textContent = `✨ Free Trial: ${MAX_FREE_APPEALS - appealCount} appeals remaining for free!`;
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                showStatus("Error generating letter. Please check your API Key and try again.", 'error');
+            } finally {
+                generateButton.disabled = false;
+                generateButton.textContent = 'Generate Appeal Letter';
+            }
+        });
+
+        // --- Copy Functions ---
+        document.getElementById('copyFullButton').addEventListener('click', () => {
+            const subject = outputSubject.textContent;
+            const body = appealOutput.textContent;
+            const fullEmail = `Subject: ${subject}\n\n${body}`;
+            navigator.clipboard.writeText(fullEmail);
+            showStatus('Full Email copied to clipboard!', 'info');
+        });
+
+        document.getElementById('copyTextButton').addEventListener('click', () => {
+            navigator.clipboard.writeText(appealOutput.textContent);
+            showStatus('Letter Body copied to clipboard!', 'info');
+        });
+        
+        // --- End of Script ---
+    </script>
+</body>
+</html>￼Enter<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOA Fighter - AI Appeal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@google/genai@0.1.0/dist/client.js"></script>
+    <style>
+        /* Concept 3: Bold & Dynamic Styling */
+        body { background-color: #f0f4f8; } /* Light blue-grey background */
+        .container-box { 
+            background-color: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(40, 40, 70, 0.1); /* Deep shadow */
+        }
+        .header-title { color: #1a237e; } /* Deep Indigo */
+        .btn-primary { 
+            background-color: #3f51b5; /* Indigo */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover { background-color: #303f9f; }
+        .status-success { background-color: #c8e6c9; color: #388e3c; }
+        .status-error { background-color: #ffcdd2; color: #c62828; }
+        .output-box { border-left: 5px solid #3f51b5; } /* Blue highlight */
+        /* Tone Select Styling for better visibility */
+        #toneSelect {
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+
+    <div id="app" class="flex flex-col items-center">
+        <header class="py-6 text-center">
+      <h1 class="text-4xl font-extrabold header-title">HOA Fine Fighter 🤖</h1>
+            <p class="mt-2 text-xl text-gray-600">Fight Unfair Fines with AI-Powered Appeal Letters</p>
+        </header>
+
+        <main class="w-full max-w-4xl container-box p-6 sm:p-10">
+            <div id="trialMessage" class="bg-indigo-100 border border-indigo-400 text-indigo-700 p-4 rounded-lg mb-6">
+                ✨ **Free Trial:** Get your first appeal generated for free!
+            </div>
+
+            <section class="mb-6">
+                <label for="fineInput" class="block text-lg font-medium text-gray-700 mb-2">
+                    1. Paste Your HOA Violation Notice Text Here:
+                </label>
+                <textarea
+                    id="fineInput"
+                    rows="8"
+                    class="w-full p-4 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Example: 'You are fined $100 for non-compliance...'"
+                ></textarea>
+            </section>
+            
+            <section id="toneSection" class="flex justify-between items-center mb-6 p-3 border rounded-lg bg-gray-50">
+                <label for="toneSelect" class="font-medium text-gray-700">2. Select Appeal Tone (PRO Feature):</label>
+                <select id="toneSelect" disabled class="cursor-not-allowed bg-white">
+                    <option value="formal">Formal & Polite (Default)</option>
+                    <option value="firm">Firm but Professional</option>
+                    <option value="aggressive" disabled>Aggressive/Legalistic (PRO)</option>
+                </select>
+            </section>
+
+
+            <div class="flex justify-center mb-8">
+                <button
+                    id="generateButton"
+                    class="px-8 py-3 text-white font-semibold rounded-lg shadow-md btn-primary"
+                >
+                    Generate Appeal Letter
+                </button>
+            </div>
+
+            <div id="statusMessage" class="hidden px-4 py-3 rounded relative mb-6"></div>
+
+            <section id="outputSection" class="mt-8 hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                    ✅ Your AI-Generated Appeal Letter:
+                </h2>
+                <div class="bg-gray-100 p-6 rounded-lg border border-indigo-300 relative output-box">
+                    <p class="font-bold text-lg mb-2">Subject: <span id="outputSubject" class="font-normal text-base"></span></p>
+                    <pre id="appealOutput" class="whitespace-pre-wrap font-sans text-gray-800 text-base leading-relaxed"></pre>
+                    
+                    <div class="mt-4 flex justify-end space-x-2">
+                        <button id="copyFullButton" class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition">
+                            Copy Full Email
+                        </button>
+                        <button id="copyTextButton" class="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition">
+                            Copy Letter Body Only
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="paymentGate" class="hidden mt-8 p-6 border-t-2 border-dashed border-red-300 text-center">
+                <h3 class="text-2xl font-bold text-red-600 mb-4">Your Free Trial Has Ended!</h3>
+                <p class="text-lg text-gray-700 mb-6">Unlock powerful PRO features including Tone Customization and Unlimited Appeals.</p>
+
+                <div class="flex justify-center space-x-4">
+                    <a id="linkSingle" href="YOUR_SINGLE_PAYMENT_LINK" target="_blank"
+                       class="flex-1 block p-4 border-2 border-yellow-500 rounded-lg shadow-lg bg-yellow-100 hover:bg-yellow-200 transition">
+                        <p class="font-bold text-xl text-yellow-800">One-Time Appeal</p>
+                        <p class="text-2xl font-extrabold text-yellow-900">₹50</p>
+                        <p class="text-sm text-gray-600 mt-2">Pay per use</p>
+                    </a>
+                    
+                    <a id="linkMonthly" href="YOUR_MONTHLY_PAYMENT_LINK" target="_blank"
+                       class="flex-1 block p-4 border-2 border-green-600 rounded-lg shadow-lg bg-green-100 hover:bg-green-200 transition">
+                        <p class="font-bold text-xl text-green-800">Unlimited Monthly</p>
+                        <p class="text-2xl font-extrabold text-green-900">₹299/Month</p>
+                        <p class="text-sm text-gray-600 mt-2">Unlock all PRO features</p>
+                    </a>
+                </div>
+            </section>
+            </main>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION (Change ONLY the Key and Links!) ---
+        const API_KEY =AIzaSyCvCAxVIA8YS34OyguZF5pZCIhACzfYq8U; 
+        // NOTE: These links must be created in PayPal/Stripe/Razorpay first.
+        const SINGLE_PAYMENT_LINK = 'YOUR_SINGLE_PAYMENT_LINK'#'; 
+        const MONTHLY_PAYMENT_LINK = 'YOUR_MONTHLY_PAYMENT_LINK'"';
+
+        // --- 2. CORE LOGIC (No need to change) ---
+        const ai = new GoogleGenerativeAI(API_KEY);
+        const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" }); 
+        
+        // DOM Elements
+        const fineInput = document.getElementById('fineInput');
+        const generateButton = document.getElementById('generateButton');
+        const appealOutput = document.getElementById('appealOutput');
+        const outputSection = document.getElementById('outputSection');
+        const statusMessage = document.getElementById('statusMessage');
+        const outputSubject = document.getElementById('outputSubject');
+        const toneSelect = document.getElementById('toneSelect');
+        const paymentGate = document.getElementById('paymentGate');
+        const trialMessage = document.getElementById('trialMessage');
+        const linkSingle = document.getElementById('linkSingle');
